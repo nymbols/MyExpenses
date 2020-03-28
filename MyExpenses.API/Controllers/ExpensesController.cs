@@ -30,6 +30,10 @@ namespace MyExpenses.API.Controllers
 			Configuration = configuration;
 		}
 
+		/// <summary>
+		/// Retrieves all expenses stored in the database
+		/// </summary>
+		/// <returns>List of ExpenseModel</returns>
 		[HttpGet]
 		public async Task<ActionResult> GetExpensesAsync()
 		{
@@ -42,7 +46,12 @@ namespace MyExpenses.API.Controllers
 			});
 		}
 
-		[HttpGet("{userId:long}", Name = "GetExpensesForUser")]
+		/// <summary>
+		/// Retrieves all expenses stored for a User
+		/// </summary>
+		/// <param name="userId">Users Id</param>
+		/// <returns>List of ExpenseModel</returns>
+		[HttpGet("byUserId/{userId:long}", Name = "GetExpensesForUser")]
 		public async Task<ActionResult> GetExpensesForUser(long userId)
 		{
 			if (!_expensesRepository.UserExists(userId))
@@ -60,7 +69,13 @@ namespace MyExpenses.API.Controllers
 			});
 		}
 
-		[HttpPost("{userId:long}", Name = "CreateExpenseForUser")]
+		/// <summary>
+		/// Createan Expense item for an existing User.
+		/// </summary>
+		/// <param name="userId">Existing User's Id</param>
+		/// <param name="expense">expense object</param>
+		/// <returns>Expense</returns>
+		[HttpPost("byUserId/{userId:long}", Name = "CreateExpenseForUser")]
 		public async Task<ActionResult> CreateExpenseForUser(long userId, CreateExpenseModel expense)
         {
             if (!_expensesRepository.UserExists(userId))
@@ -88,6 +103,11 @@ namespace MyExpenses.API.Controllers
 				expenseModel);
         }
 
+		/// <summary>
+		/// Creates an expense item and creates a User for the item.
+		/// </summary>
+		/// <param name="expense">Expense object</param>
+		/// <returns>Expense</returns>
 		[HttpPost]
 		public async Task<ActionResult<Expense>> CreateExpenseAsync(CreateExpenseModel expense)
 		{
@@ -109,12 +129,18 @@ namespace MyExpenses.API.Controllers
 				expenseModel);
 		}
 
+
+		/// <summary>
+		/// Calculates the VAT value from a total value. Where the total value is a sum of the original expense cost and the VAT charged.
+		/// </summary>
+		/// <param name="totalValue">Total cost of an expense</param>
+		/// <returns>VAT Value</returns>
 		private decimal CalculateVATFromValue(decimal totalValue)
 		{
 			var vatValue = 0M;
 			if (totalValue < 0)
 			{
-				throw new ArgumentOutOfRangeException();
+				throw new ArgumentOutOfRangeException("Expense Value must be a positive number.");
 			}
 			string vatPercentage = Configuration.GetSection("VAT").Value;
 
