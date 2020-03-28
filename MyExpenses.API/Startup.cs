@@ -1,26 +1,16 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Serialization;
-
-using MyExpenses.API.Data;
-using Microsoft.AspNetCore.Internal;
-using Microsoft.AspNetCore.Rewrite;
-using MyExpenses.API.Repositories;
 using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Http;
+using MyExpenses.API.Data;
 using MyExpenses.API.MappingProfiles;
+using MyExpenses.API.Repositories;
 
 namespace MyExpenses.API
 {
@@ -52,7 +42,6 @@ namespace MyExpenses.API
 			});
 
 			services.AddOptions();
-			//services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 			services.AddAutoMapper(typeof(ExpenseMappings));
 
 			services.AddScoped<IExpenseRepository, ExpenseRepository>();
@@ -63,7 +52,6 @@ namespace MyExpenses.API
 				options.UseSqlServer(connectionString);
 			});
 
-			//services.AddSwaggerGen();
 			services.AddSwaggerGen(c =>
 			{
 				c.SwaggerDoc("v1", new OpenApiInfo { Title = "My Expenses API", Version = "v1" });
@@ -71,7 +59,9 @@ namespace MyExpenses.API
 			services.AddRouting(options => options.LowercaseUrls = true);
 			services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-			services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+			services.AddMvc(options =>
+				options.Filters.Add(new HttpResponseExceptionFilter()))
+				.SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -88,6 +78,7 @@ namespace MyExpenses.API
 			}
 			app.UseCors(AllowSpecificOrigins);
 
+			//Use Https
 			app.UseHttpsRedirection();
 			app.Use(async (context, next) =>
 			{
@@ -106,11 +97,14 @@ namespace MyExpenses.API
 				c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
 			});
 
-			//var option = new RewriteOptions();
-			//option.AddRedirect("^$", "swagger");
-			//app.UseRewriter(option);
+			// Redirect from home to swagger
+			var option = new RewriteOptions();
+			option.AddRedirect("^$", "swagger");
+			app.UseRewriter(option);
 
 			app.UseMvc();
+
+			//creates db
 			expenseContext.Database.EnsureCreated();
 		}
 	}
